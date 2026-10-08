@@ -1,0 +1,4 @@
+Flask
+numpy
+ai-edge-litert
+gunicorn

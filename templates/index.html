@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SALBAR Command Dashboard</title>
+<style>
+  :root {
+    --bg: #06090d;
+    --panel: #0c1218;
+    --panel-2: #090e13;
+    --line: #1c2733;
+    --line-2: #2a3846;
+    --text: #e8eef4;
+    --muted: #7d8da0;
+    --dim: #4f5d6d;
+    --red: #ff4d4f;
+    --orange: #ff9f1a;
+    --amber: #f2b138;
+    --green: #35c46a;
+    --blue: #5aa9ff;
+    --grey: #6b7a8c;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  [hidden] { display: none !important; }
+  .mono { font-family: var(--mono); }
+  .na { color: var(--muted); font-style: italic; font-weight: 500 !important; }
+
+  .k {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ================= COMMAND BAR ================= */
+  .cmd {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap;
+    padding: 10px 22px;
+    background: #05080b;
+    border-bottom: 1px solid var(--line-2);
+    position: relative;
+  }
+  .cmd::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: linear-gradient(90deg, var(--red) 0 140px, transparent 140px);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 34px; height: 34px; border: 1.5px solid var(--red); color: var(--red);
+    display: grid; place-items: center; font-weight: 800; font-family: var(--mono);
+    clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%);
+  }
+  .brand-name { font-weight: 800; letter-spacing: 0.24em; font-size: 17px; line-height: 1.1; }
+  .brand-sub { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--muted); }
+  .cmd-mid { display: flex; gap: 26px; flex-wrap: wrap; }
+  .cmd-mid div { display: flex; flex-direction: column; gap: 1px; }
+  .cmd-mid .v { font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .cmd-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .clock { font-family: var(--mono); font-size: 18px; letter-spacing: 0.06em; padding-left: 8px; }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 3px 10px; border: 1px solid var(--grey); color: var(--grey);
+    font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    white-space: nowrap; border-radius: 2px;
+  }
+  .pill .dot { width: 7px; height: 7px; background: currentColor; }
+  .s-ready { color: var(--green); border-color: rgba(53,196,106,0.55); background: rgba(53,196,106,0.07); }
+  .s-nc    { color: var(--grey);  border-color: rgba(107,122,140,0.6); background: rgba(107,122,140,0.08); }
+  .s-test  { color: var(--amber); border-color: rgba(242,177,56,0.6);  background: rgba(242,177,56,0.09); }
+  .s-bad   { color: var(--red);   border-color: rgba(255,77,79,0.6);   background: rgba(255,77,79,0.09); }
+  .s-unk   { color: var(--muted); border-style: dashed; }
+
+  /* ================= BANNERS ================= */
+  .banners { position: sticky; top: 0; z-index: 20; }
+  .test-banner {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 9px 22px;
+    background: repeating-linear-gradient(135deg, #2b1f05 0 14px, #1c1403 14px 28px);
+    border-bottom: 2px solid var(--amber);
+    color: #ffd98a;
+  }
+  .test-banner .tb-title {
+    font-family: var(--mono); font-weight: 800; letter-spacing: 0.18em; color: #1a1202;
+    background: var(--amber); padding: 3px 10px; font-size: 13px; white-space: nowrap;
+  }
+  .test-banner .tb-text { font-size: 13px; }
+  .conn-banner {
+    padding: 8px 22px; background: #2a0c0d; border-bottom: 2px solid var(--red); color: #ffb9ba; font-size: 13px;
+  }
+
+  /* ================= LAYOUT ================= */
+  main { max-width: 1280px; margin: 0 auto; padding: 16px 16px 30px; display: grid; gap: 14px; }
+  .deck { display: grid; grid-template-columns: 330px 1fr; gap: 14px; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 920px) {
+    .deck, .duo { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 0;
+  }
+  .panel::before, .panel::after {
+    content: ""; position: absolute; width: 12px; height: 12px; pointer-events: none;
+    border: 0 solid var(--line-2);
+  }
+  .panel::before { top: -1px; left: -1px; border-top-width: 2px; border-left-width: 2px; }
+  .panel::after  { bottom: -1px; right: -1px; border-bottom-width: 2px; border-right-width: 2px; }
+
+  .ph {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--panel-2);
+  }
+  .ph .idx {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    border: 1px solid var(--line-2); padding: 1px 6px;
+  }
+  .ph .ttl { font-weight: 700; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .ph .sub { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--muted); letter-spacing: 0.06em; }
+  .pb { padding: 14px; }
+
+  /* ================= HERO / DETECTION ================= */
+  .hero { border-color: var(--line-2); }
+  .hero-body {
+    display: grid; grid-template-columns: 1fr 230px; gap: 22px; align-items: center;
+    padding: 22px 24px;
+    border-left: 5px solid var(--dim);
+  }
+  @media (max-width: 760px) {
+    .hero-body { grid-template-columns: 1fr; padding: 16px; }
+  }
+  .hero.h-test  .hero-body { border-left-color: var(--amber); background: repeating-linear-gradient(135deg, rgba(242,177,56,0.06) 0 14px, rgba(242,177,56,0.02) 14px 28px); }
+  .hero.h-alert .hero-body { border-left-color: var(--red);   background: rgba(255,77,79,0.06); }
+  .hero.h-wait  .hero-body { border-left-color: var(--orange); }
+  .hero.h-clear .hero-body { border-left-color: var(--green); }
+
+  .headline {
+    font-size: clamp(26px, 4.4vw, 46px); font-weight: 800; letter-spacing: 0.03em; line-height: 1.05;
+    text-transform: uppercase; margin: 6px 0 10px;
+  }
+  .hero.h-test  .headline { color: var(--amber); }
+  .hero.h-alert .headline { color: var(--red); }
+  .hero.h-wait  .headline { color: var(--orange); }
+  .hero.h-clear .headline { color: var(--text); }
+  .hero.h-idle  .headline { color: var(--muted); }
+
+  .flag {
+    display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 800; letter-spacing: 0.1em;
+    padding: 4px 10px; border: 1px solid var(--amber); color: #1a1202; background: var(--amber); margin-bottom: 14px;
+  }
+  .flag.grey { background: transparent; color: var(--muted); border-color: var(--grey); }
+
+  .bigline { font-family: var(--mono); font-size: clamp(22px, 3.2vw, 32px); font-weight: 700; margin-top: 4px; }
+  .bigline small { font-size: 0.55em; font-weight: 500; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .pips { display: flex; gap: 5px; margin: 10px 0 4px; max-width: 420px; }
+  .pip { flex: 1; height: 10px; background: #0a1016; border: 1px solid var(--line-2); }
+  .pip.on { background: var(--blue); border-color: var(--blue); }
+  .pip.on.t { background: var(--amber); border-color: var(--amber); }
+  .pip.on.a { background: var(--red); border-color: var(--red); }
+  .framesub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+
+  .gauge-wrap { position: relative; width: 210px; height: 210px; margin: 0 auto; }
+  .gauge-wrap svg { width: 100%; height: 100%; display: block; }
+  .gauge-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  }
+  .gauge-center .gv { font-family: var(--mono); font-size: 28px; font-weight: 700; }
+  .gauge-cap { text-align: center; margin-top: 4px; }
+
+  .meta {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border-top: 1px solid var(--line);
+  }
+  .meta > div { padding: 10px 14px; border-right: 1px solid var(--line); min-width: 0; }
+  .meta > div:last-child { border-right: none; }
+  .meta .mv { font-family: var(--mono); font-size: 13px; margin-top: 3px; overflow-wrap: anywhere; }
+  @media (max-width: 760px) {
+    .meta { grid-template-columns: 1fr 1fr; }
+    .meta > div { border-bottom: 1px solid var(--line); }
+  }
+
+  /* ================= HARDWARE ================= */
+  .hw-row {
+    display: grid; grid-template-columns: 12px 1fr auto; column-gap: 12px; row-gap: 2px;
+    padding: 11px 14px; border-bottom: 1px solid var(--line); align-items: center;
+  }
+  .hw-row:last-of-type { border-bottom: none; }
+  .lamp { width: 10px; height: 10px; background: var(--dim); grid-row: 1 / span 2; }
+  .hw-name { font-weight: 700; letter-spacing: 0.06em; font-size: 13px; }
+  .hw-state { font-family: var(--mono); font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em; text-align: right; }
+  .hw-note { grid-column: 2 / span 2; font-size: 11.5px; color: var(--muted); min-height: 1em; }
+  .hw-row.s-ready .lamp { background: var(--green); }
+  .hw-row.s-ready .hw-state { color: var(--green); }
+  .hw-row.s-nc .lamp { background: transparent; border: 1.5px solid var(--grey); }
+  .hw-row.s-nc .hw-state { color: var(--grey); }
+  .hw-row.s-test .lamp { background: var(--amber); }
+  .hw-row.s-test .hw-state { color: var(--amber); }
+  .hw-row.s-bad .lamp { background: var(--red); }
+  .hw-row.s-bad .hw-state { color: var(--red); }
+  .hw-row.s-unk .hw-state { color: var(--muted); }
+  .hw-row { background: none; border-color: var(--line); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--panel-2); }
+  .legend span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 8px; height: 8px; display: inline-block; }
+
+  /* ================= THERMAL ================= */
+  .thermal-stage {
+    position: relative; width: 100%; aspect-ratio: 4 / 3; min-height: 240px;
+    background: #04070a;
+    border: 1px solid var(--line-2);
+    overflow: hidden;
+  }
+  .thermal-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(90,169,255,0.10) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(90,169,255,0.10) 1px, transparent 1px);
+    background-size: calc(100% / 32) calc(100% / 24);
+  }
+  .crosshair::before, .crosshair::after { content: ""; position: absolute; background: rgba(255,255,255,0.10); }
+  .crosshair::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .crosshair::after  { top: 50%; left: 0; right: 0; height: 1px; }
+  .thermal-msg {
+    position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 16px; gap: 8px;
+  }
+  .t1 { font-family: var(--mono); font-size: 12px; letter-spacing: 0.3em; color: var(--muted); }
+  .t2 { font-family: var(--mono); font-size: clamp(16px, 2.6vw, 24px); font-weight: 700; letter-spacing: 0.12em; color: var(--text); border: 1px solid var(--line-2); padding: 8px 16px; background: rgba(4,7,10,0.85); }
+  .t3 { font-size: 12px; color: var(--muted); max-width: 380px; }
+  .tcorner { position: absolute; width: 18px; height: 18px; border: 0 solid var(--grey); }
+  .tc1 { top: 8px; left: 8px; border-top-width: 2px; border-left-width: 2px; }
+  .tc2 { top: 8px; right: 8px; border-top-width: 2px; border-right-width: 2px; }
+  .tc3 { bottom: 8px; left: 8px; border-bottom-width: 2px; border-left-width: 2px; }
+  .tc4 { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; }
+  .scale { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; }
+  .scale-bar { flex: 1; height: 8px; border: 1px solid var(--line-2); background: repeating-linear-gradient(90deg, #0a1016 0 6px, #0e161e 6px 12px); }
+
+  /* ================= ROWS ================= */
+  .rows > div {
+    display: flex; justify-content: space-between; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--line);
+  }
+  .rows > div:last-child { border-bottom: none; }
+  .rows .rk { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); align-self: center; }
+  .rows .rv { font-family: var(--mono); font-size: 13px; text-align: right; overflow-wrap: anywhere; }
+
+  .coord { font-family: var(--mono); font-size: 20px; }
+
+  .sms-box {
+    margin: 14px; padding: 16px; text-align: center;
+    border: 2px solid var(--red); color: var(--red); background: rgba(255,77,79,0.07);
+    font-family: var(--mono); font-weight: 800; letter-spacing: 0.14em; font-size: 20px;
+  }
+  .sms-box.sent { border-color: var(--amber); color: var(--amber); background: rgba(242,177,56,0.07); }
+  .sms-box.unknown { border: 2px dashed var(--grey); color: var(--muted); background: transparent; }
+  .sms-box small { display: block; margin-top: 6px; font-size: 11.5px; font-weight: 500; letter-spacing: 0.02em; color: var(--muted); font-family: var(--sans); }
+
+  .notice { margin: 0 14px 14px; padding: 9px 12px; border: 1px solid var(--line); background: var(--panel-2); font-size: 12px; color: var(--muted); }
+  .link { color: var(--blue); font-size: 12px; text-decoration: none; display: inline-block; margin: 0 14px 14px; }
+  .link:hover { text-decoration: underline; }
+
+  /* ================= HISTORY ================= */
+  .table-wrap { overflow: auto; max-height: 340px; }
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+  th, td { padding: 8px 14px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--line); }
+  th {
+    position: sticky; top: 0; background: var(--panel-2); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--muted); font-weight: 600;
+  }
+  tr.test-row td { color: #e6c27a; }
+  .btn {
+    background: transparent; color: var(--muted); border: 1px solid var(--line-2); padding: 3px 10px;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; cursor: pointer; margin-left: 8px;
+  }
+  .btn:hover { color: var(--text); border-color: var(--grey); }
+
+  .footer { max-width: 1280px; margin: 0 auto; padding: 0 16px 28px; text-align: center; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; color: var(--dim); }
+</style>
+</head>
+<body>
+
+<!-- ============ COMMAND BAR ============ -->
+<header class="cmd">
+  <div class="brand">
+    <div class="brand-mark">S</div>
+    <div>
+      <div class="brand-name">SALBAR</div>
+      <div class="brand-sub">SURVIVOR ASSESSMENT &amp; LOCATION BEACON</div>
+    </div>
+  </div>
+  <div class="cmd-mid">
+    <div><span class="k">Unit</span><span class="v">FIELD 01</span></div>
+    <div><span class="k">Session</span><span class="v" id="sessionTime">00:00:00</span></div>
+    <div><span class="k">Last update</span><span class="v" id="lastUpdate">--:--:--</span></div>
+  </div>
+  <div class="cmd-right">
+    <span class="pill s-unk" id="modePill"><span class="dot"></span><span>NO DATA</span></span>
+    <span class="pill s-unk" id="topPill"><span class="dot"></span><span>CONNECTING</span></span>
+    <span class="clock" id="clock">--:--:--</span>
+  </div>
+</header>
+
+<div class="banners">
+  <div class="test-banner" id="testBanner" hidden>
+    <span class="tb-title">TEST MODE</span>
+    <span class="tb-text">Detection mode is TEST. The CNN is analysing a test input, not a live MLX90640 image.
+    Results are <b>not real survivor detections</b> and must not be used to make a rescue decision.</span>
+  </div>
+  <div class="conn-banner" id="connBanner" hidden>
+    <b>BACKEND UNREACHABLE.</b> The dashboard cannot reach the SALBAR server. Values shown are not current.
+  </div>
+</div>
+
+<main>
+
+  <!-- ============ 01 DETECTION (CENTERPIECE) ============ -->
+  <section class="panel hero h-idle" id="hero">
+    <div class="ph">
+      <span class="idx">01</span><span class="ttl">Detection</span>
+      <span class="sub">TFLITE CNN &middot; RASPBERRY PI 4 &middot; 5-FRAME CONFIRMATION</span>
+    </div>
+    <div class="hero-body">
+      <div>
+        <div class="k">Assessment</div>
+        <div class="headline" id="headline">Awaiting data</div>
+        <div class="flag" id="flag" hidden></div>
+        <div class="bigline"><span id="confLine">--</span> <small>confidence</small></div>
+        <div class="bigline"><span id="framesLine">-- / --</span> <small id="framesCap">frames confirmed</small></div>
+        <div class="pips" id="pips"></div>
+        <div class="framesub" id="framesSub">Waiting for detection data.</div>
+      </div>
+      <div>
+        <div class="gauge-wrap">
+          <svg viewBox="0 0 160 160" aria-hidden="true">
+            <circle cx="80" cy="80" r="64" fill="none" stroke="#141d27" stroke-width="12"></circle>
+            <circle id="gaugeArc" cx="80" cy="80" r="64" fill="none" stroke="#5aa9ff" stroke-width="12"
+                    stroke-dasharray="402.12" stroke-dashoffset="402.12" transform="rotate(-90 80 80)"></circle>
+            <line id="gaugeTick" x1="80" y1="6" x2="80" y2="26" stroke="#ffffff" stroke-width="2.5" transform="rotate(252 80 80)"></line>
+          </svg>
+          <div class="gauge-center">
+            <span class="k">Threshold</span>
+            <span class="gv" id="gaugeThr">--</span>
+            <span class="k">Human score</span>
+          </div>
+        </div>
+        <div class="gauge-cap k" id="gaugeCap">Ring = human confidence</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div><div class="k">Classification</div><div class="mv" id="mClass">--</div></div>
+      <div><div class="k">Conf. threshold</div><div class="mv" id="mThr">--</div></div>
+      <div><div class="k">Detection mode</div><div class="mv" id="mMode">--</div></div>
+      <div><div class="k">Sensor</div><div class="mv" id="mSensor">--</div></div>
+      <div><div class="k">Sensor status</div><div class="mv" id="mSensorStatus">--</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 02 HARDWARE  +  03 THERMAL ============ -->
+  <div class="deck">
+    <section class="panel">
+      <div class="ph"><span class="idx">02</span><span class="ttl">Hardware status</span></div>
+      <div class="hw-row s-unk" id="tBackend"><span class="lamp"></span><span class="hw-name">BACKEND</span><span class="hw-state">--</span><span class="hw-note"></span></div>
+      <div class="hw-row s-unk" id="tCnn"><span class="lamp"></span><span class="hw-name">CNN</span><span class="hw-state">--</span><span class="hw-note"></span></div>
+      <div class="hw-row s-unk" id="tMlx"><span class="lamp"></span><span class="hw-name">MLX90640</span><span class="hw-state">--</span><span class="hw-note"></span></div>
+      <div class="hw-row s-unk" id="tGps"><span class="lamp"></span><span class="hw-name">GPS</span><span class="hw-state">--</span><span class="hw-note"></span></div>
+      <div class="hw-row s-unk" id="tLte"><span class="lamp"></span><span class="hw-name">A7670E</span><span class="hw-state">--</span><span class="hw-note"></span></div>
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>READY</span>
+        <span><i style="border:1.5px solid var(--grey)"></i>NOT CONNECTED</span>
+        <span><i style="background:var(--amber)"></i>TEST MODE</span>
+        <span><i style="background:var(--red)"></i>ERROR</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="ph">
+        <span class="idx">03</span><span class="ttl">MLX90640 thermal feed</span>
+        <span class="sub">24 &times; 32 ARRAY (ROWS &times; COLS)</span>
+      </div>
+      <div class="pb">
+        <div class="thermal-stage" id="thermalStage">
+          <div class="thermal-grid"></div>
+          <div class="crosshair"></div>
+          <span class="tcorner tc1"></span><span class="tcorner tc2"></span><span class="tcorner tc3"></span><span class="tcorner tc4"></span>
+          <div class="thermal-msg">
+            <div class="t1">THERMAL FEED</div>
+            <div class="t2" id="thermalState">WAITING FOR MLX90640</div>
+            <div class="t3" id="thermalNote">The 24 &times; 32 thermal visualization will replace this area once live frames are available.</div>
+          </div>
+        </div>
+        <div class="scale">
+          <span class="k">Cold</span>
+          <div class="scale-bar"></div>
+          <span class="k">Hot</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 04 GPS  +  05 SMS ============ -->
+  <div class="duo">
+    <section class="panel">
+      <div class="ph">
+        <span class="idx">04</span><span class="ttl">GPS / Location</span>
+        <span class="sub">NEO-8M</span>
+      </div>
+      <div class="rows">
+        <div><span class="rk">GPS status</span><span class="rv" id="gpsText">--</span></div>
+        <div><span class="rk">Latitude</span><span class="rv coord" id="latText">--</span></div>
+        <div><span class="rk">Longitude</span><span class="rv coord" id="lonText">--</span></div>
+        <div><span class="rk">Accuracy</span><span class="rv" id="accText">--</span></div>
+      </div>
+      <div class="notice" id="gpsNotice" style="margin-top:14px">No location available.</div>
+      <a class="link" id="mapLink" href="#" target="_blank" rel="noopener" hidden>Open this position in OpenStreetMap</a>
+    </section>
+
+    <section class="panel">
+      <div class="ph">
+        <span class="idx">05</span><span class="ttl">SMS alert</span>
+        <span class="sub">SIMCOM A7670E &middot; 4G LTE</span>
+      </div>
+      <div class="sms-box unknown" id="smsBox">CHECKING&hellip;<small id="smsBoxSub"></small></div>
+      <div class="rows" style="border-top:1px solid var(--line)">
+        <div><span class="rk">Cellular status</span><span class="rv" id="cellText">--</span></div>
+        <div><span class="rk">SMS status</span><span class="rv" id="smsText">--</span></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ 06 HISTORY ============ -->
+  <section class="panel">
+    <div class="ph">
+      <span class="idx">06</span><span class="ttl">Detection history</span>
+      <span class="sub">THIS BROWSER TAB ONLY &middot; CLEARED ON REFRESH &middot; NEWEST FIRST
+        <button class="btn" id="clearBtn" type="button">CLEAR</button></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Classification</th><th>Confidence</th><th>Confirmation</th><th>Detection mode</th></tr>
+        </thead>
+        <tbody id="historyBody">
+          <tr><td colspan="5" class="na">No readings yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<div class="footer">SALBAR SCHOOL RESEARCH PROTOTYPE &middot; DATA REFRESHES EVERY 2 SECONDS &middot; RESULTS MARKED TEST ARE NOT REAL SURVIVOR DETECTIONS</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var POLL_MS = 2000;
+  var TIMEOUT_MS = 4000;
+  var MAX_HISTORY = 40;
+  var NA = "Not available";
+  var GAUGE_C = 402.12;
+  var startedAt = Date.now();
+
+  var history = [];
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- helpers ---------- */
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function timeStr(d) { return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds()); }
+  function isNum(v) { return typeof v === "number" && isFinite(v); }
+
+  // look for any of the keys on obj, then one level down inside nested objects
+  function pick(obj, keys) {
+    if (!obj || typeof obj !== "object") return undefined;
+    var i, k, sub;
+    for (i = 0; i < keys.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(obj, keys[i])) return obj[keys[i]];
+    }
+    for (k in obj) {
+      if (!Object.prototype.hasOwnProperty.call(obj, k)) continue;
+      sub = obj[k];
+      if (sub && typeof sub === "object" && !Array.isArray(sub)) {
+        for (i = 0; i < keys.length; i++) {
+          if (Object.prototype.hasOwnProperty.call(sub, keys[i])) return sub[keys[i]];
+        }
+      }
+    }
+    return undefined;
+  }
+
+  // a module value may be a string, boolean or an object like {status: "..."}
+  function flat(v) {
+    if (v && typeof v === "object") {
+      var inner = pick(v, ["status", "state", "connected", "ready", "ok"]);
+      return inner === undefined ? null : inner;
+    }
+    return v === undefined ? null : v;
+  }
+
+  function text(v) {
+    if (v === null || v === undefined || v === "") return NA;
+    if (typeof v === "object") { try { return JSON.stringify(v); } catch (e) { return NA; } }
+    return String(v);
+  }
+
+  function norm(v) {
+    v = flat(v);
+    if (v === null || v === undefined || v === "") return "unknown";
+    if (v === true) return "ready";
+    if (v === false) return "nc";
+    var s = String(v).toLowerCase();
+    if (/test|simulat|mock|demo/.test(s)) return "test";
+    if (/not.?connected|disconnect|missing|absent|unavailable|no.?fix|not.?detected|not.?found|offline|disabled|none|waiting/.test(s)) return "nc";
+    if (/error|fail|fault|crash/.test(s)) return "bad";
+    if (/ready|ok|online|connected|loaded|active|running|fix|enabled/.test(s)) return "ready";
+    return "unknown";
+  }
+
+  var LABELS = { ready: "READY", nc: "NOT CONNECTED", test: "TEST MODE", bad: "ERROR", unknown: "UNKNOWN" };
+  var CLS = { ready: "s-ready", nc: "s-nc", test: "s-test", bad: "s-bad", unknown: "s-unk" };
+
+  function setPill(el, state, label) {
+    el.className = "pill " + CLS[state];
+    el.querySelector("span:last-child").textContent = label || LABELS[state];
+  }
+
+  function setTile(id, state, label, note) {
+    var t = $(id);
+    t.className = "hw-row " + CLS[state];
+    t.querySelector(".hw-state").textContent = label || LABELS[state];
+    t.querySelector(".hw-note").textContent = note || "";
+  }
+
+  function setVal(id, v) {
+    var el = $(id);
+    if (v === null || v === undefined) { el.textContent = NA; el.className = "rv na"; }
+    else { el.textContent = v; el.className = "rv coord"; }
+  }
+
+  function fetchJSON(url) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, TIMEOUT_MS);
+    return fetch(url, { cache: "no-store", signal: ctrl.signal })
+      .then(function (r) {
+        clearTimeout(timer);
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) { return { ok: true, data: data }; })
+      .catch(function () { clearTimeout(timer); return { ok: false, data: null }; });
+  }
+
+  /* ---------- rendering ---------- */
+  function render(res) {
+    var st = res.status, det = res.detection, loc = res.location, alt = res.alert;
+    var sd = st.ok ? st.data : null;
+    var dd = det.ok ? det.data : null;
+    var ld = loc.ok ? loc.data : null;
+    var ad = alt.ok ? alt.data : null;
+
+    var online = st.ok || det.ok || loc.ok || alt.ok;
+    $("connBanner").hidden = online;
+
+    var modeRaw = dd ? pick(dd, ["detection_mode", "mode"]) : null;
+    var sensorStatusRaw = dd ? pick(dd, ["sensor_status"]) : null;
+    var isTest = !!dd && (/test/i.test(String(modeRaw || "")) || /test/i.test(String(sensorStatusRaw || "")));
+    $("testBanner").hidden = !isTest;
+
+    /* ----- hardware status ----- */
+    if (online) setTile("tBackend", "ready", "ONLINE", "Flask server, port 5000");
+    else setTile("tBackend", "bad", "OFFLINE", "Cannot reach the server");
+
+    var hasScores = !!dd && isNum(pick(dd, ["human_score"]));
+    var cnnState = sd ? norm(pick(sd, ["cnn", "cnn_model", "cnn_status", "model", "model_loaded", "tflite"])) : "unknown";
+    if (cnnState === "unknown" && hasScores) cnnState = "ready";
+    if (!online) cnnState = "unknown";
+    setTile("tCnn", cnnState, null, cnnState === "ready" ? "TFLite model is producing scores" : "");
+
+    var mlxState = sd ? norm(pick(sd, ["mlx90640", "mlx", "thermal", "thermal_sensor", "mlx90640_status"])) : "unknown";
+    if (mlxState === "unknown" || (isTest && mlxState === "ready")) mlxState = online ? "nc" : "unknown";
+    setTile("tMlx", mlxState, null, mlxState === "nc" ? (isTest ? "No live thermal data. CNN is using test input." : "No live thermal data") : "");
+
+    var latV = ld ? pick(ld, ["latitude", "lat"]) : null;
+    var lonV = ld ? pick(ld, ["longitude", "lon", "lng"]) : null;
+    var accV = ld ? pick(ld, ["accuracy", "accuracy_m", "hdop"]) : null;
+    var hasCoords = isNum(latV) && isNum(lonV);
+    var gpsRaw = ld ? pick(ld, ["gps_status", "status", "fix", "has_fix", "state"]) : (sd ? pick(sd, ["gps", "gps_status"]) : null);
+    var gpsState = norm(gpsRaw);
+    if (gpsState === "unknown") gpsState = hasCoords ? "ready" : (online ? "nc" : "unknown");
+    if (!hasCoords && gpsState === "ready") gpsState = "nc";
+    setTile("tGps", gpsState, null, gpsState === "nc" ? "No position fix" : (gpsState === "ready" ? "Position available" : ""));
+
+    var cellRaw = ad ? pick(ad, ["cellular_status", "cellular", "network", "modem", "lte"]) : (sd ? pick(sd, ["a7670e", "lte", "cellular", "modem"]) : null);
+    var lteState = norm(cellRaw);
+    if (lteState === "unknown") lteState = online ? "nc" : "unknown";
+    setTile("tLte", lteState, null, lteState === "nc" ? "No cellular link. SMS unavailable." : "");
+
+    /* ----- thermal placeholder ----- */
+    if (mlxState === "ready") {
+      $("thermalState").textContent = "SENSOR READY - NO FRAME STREAM";
+      $("thermalNote").textContent = "The backend does not provide thermal frames yet.";
+    } else {
+      $("thermalState").textContent = "WAITING FOR MLX90640";
+      $("thermalNote").textContent = "The 24 \u00d7 32 thermal visualization will replace this area once live frames are available.";
+    }
+
+    /* ----- command bar mode pill ----- */
+    if (!dd) setPill($("modePill"), "unknown", "NO DATA");
+    else if (isTest) setPill($("modePill"), "test", "TEST MODE");
+    else if (mlxState === "ready") setPill($("modePill"), "ready", "LIVE");
+    else setPill($("modePill"), "nc", "SENSOR NOT READY");
+
+    /* ----- detection ----- */
+    var cls = dd ? pick(dd, ["classification", "class", "label"]) : null;
+    var human = dd ? pick(dd, ["human_score"]) : null;
+    var thr = dd ? pick(dd, ["confidence_threshold", "threshold"]) : null;
+    var consec = dd ? pick(dd, ["consecutive_frames"]) : null;
+    var req = dd ? pick(dd, ["required_frames"]) : null;
+    var confirmed = dd ? pick(dd, ["confirmed"]) === true : false;
+
+    var clsText = cls ? String(cls).replace(/_/g, " ").toUpperCase() : "--";
+    var isHuman = !!cls && String(cls).toLowerCase().replace(/[^a-z]/g, "") === "human";
+
+    var hero = $("hero");
+    var headline = "Awaiting data";
+    var heroState = "h-idle";
+    if (dd) {
+      if (isHuman && confirmed) { headline = "Possible survivor detected"; heroState = isTest ? "h-test" : "h-alert"; }
+      else if (isHuman) { headline = "Human signature - confirming"; heroState = isTest ? "h-test" : "h-wait"; }
+      else { headline = "No human signature detected"; heroState = isTest ? "h-test" : "h-clear"; }
+    }
+    hero.className = "panel hero " + heroState;
+    $("headline").textContent = headline;
+
+    var flag = $("flag");
+    if (dd && isTest) {
+      flag.hidden = false; flag.className = "flag";
+      flag.textContent = "TEST INPUT \u00b7 NOT A REAL DETECTION \u00b7 DO NOT DISPATCH";
+    } else if (dd && mlxState !== "ready") {
+      flag.hidden = false; flag.className = "flag grey";
+      flag.textContent = "UNVERIFIED \u00b7 THERMAL SENSOR NOT READY";
+    } else {
+      flag.hidden = true;
+    }
+
+    $("confLine").textContent = isNum(human) ? (human * 100).toFixed(1) + "%" : "--";
+
+    // frames: shown capped at the requirement, true count shown underneath
+    var capped = isNum(consec) && isNum(req) ? Math.min(consec, req) : null;
+    $("framesLine").textContent = capped !== null ? capped + " / " + req : "-- / --";
+    $("framesCap").textContent = !dd ? "frames confirmed" : (confirmed ? "frames confirmed" : "frames \u00b7 not confirmed");
+    var pipsEl = $("pips");
+    var pipCount = isNum(req) ? Math.max(1, Math.min(req, 12)) : 5;
+    var filled = capped !== null ? Math.min(capped, pipCount) : 0;
+    pipsEl.textContent = "";
+    for (var i = 0; i < pipCount; i++) {
+      var p = document.createElement("div");
+      var cl = "pip";
+      if (i < filled) cl += " on" + (isTest ? " t" : (heroState === "h-alert" ? " a" : ""));
+      p.className = cl;
+      pipsEl.appendChild(p);
+    }
+    if (!dd) $("framesSub").textContent = "Waiting for detection data.";
+    else if (isNum(consec)) $("framesSub").textContent = consec + " consecutive frame" + (consec === 1 ? "" : "s") + " above threshold" + (isTest ? " (test input)" : "");
+    else $("framesSub").textContent = NA;
+
+    // gauge
+    var pct = isNum(human) ? Math.max(0, Math.min(1, human)) : 0;
+    var arc = $("gaugeArc");
+    arc.setAttribute("stroke-dashoffset", String(GAUGE_C * (1 - pct)));
+    arc.setAttribute("stroke", isTest ? "#f2b138" : (heroState === "h-alert" ? "#ff4d4f" : "#5aa9ff"));
+    if (isNum(thr)) {
+      var t = Math.max(0, Math.min(1, thr));
+      $("gaugeTick").setAttribute("transform", "rotate(" + (t * 360) + " 80 80)");
+      $("gaugeThr").textContent = Math.round(t * 100) + "%";
+      $("mThr").textContent = Math.round(t * 100) + "% (" + thr + ")";
+    } else {
+      $("gaugeThr").textContent = "--";
+      $("mThr").textContent = NA;
+    }
+
+    $("mClass").textContent = dd ? clsText : NA;
+    $("mMode").textContent = dd ? text(modeRaw) : NA;
+    $("mSensor").textContent = dd ? text(pick(dd, ["sensor"])) : NA;
+    $("mSensorStatus").textContent = dd ? text(sensorStatusRaw) : NA;
+
+    /* ----- SMS alert ----- */
+    var smsRaw = ad ? pick(ad, ["sms_status", "sms", "sms_state"]) : null;
+    var sentRaw = ad ? pick(ad, ["sms_sent", "sent", "alert_sent"]) : undefined;
+    var sent = sentRaw === true || (typeof smsRaw === "string" && /^(sent|delivered)/i.test(smsRaw));
+    var smsBox = $("smsBox");
+    if (!ad) {
+      smsBox.className = "sms-box unknown";
+      smsBox.childNodes[0].nodeValue = "SMS STATUS UNKNOWN";
+      $("smsBoxSub").textContent = "Alert data is not reachable. No SMS can be confirmed.";
+    } else if (sent) {
+      smsBox.className = "sms-box sent";
+      smsBox.childNodes[0].nodeValue = "SMS SENT";
+      $("smsBoxSub").textContent = isTest ? "System is in TEST mode. This alert is not from a real detection." : "";
+    } else {
+      smsBox.className = "sms-box";
+      smsBox.childNodes[0].nodeValue = "\u2715  SMS NOT SENT";
+      $("smsBoxSub").textContent = "No alert message has been sent to any rescuer.";
+    }
+    $("cellText").textContent = ad ? text(cellRaw) : NA;
+    $("smsText").textContent = ad ? text(smsRaw) : NA;
+
+    /* ----- location ----- */
+    $("gpsText").textContent = LABELS[gpsState];
+    setVal("latText", hasCoords ? latV.toFixed(6) : null);
+    setVal("lonText", hasCoords ? lonV.toFixed(6) : null);
+    var accEl = $("accText");
+    if (isNum(accV)) { accEl.textContent = accV + " m"; accEl.className = "rv"; }
+    else { accEl.textContent = NA; accEl.className = "rv na"; }
+    $("gpsNotice").textContent = hasCoords ? "Position reported by the GPS module." : "GPS not connected or no fix yet. No location is available.";
+    var link = $("mapLink");
+    if (hasCoords) {
+      link.hidden = false;
+      link.href = "https://www.openstreetmap.org/?mlat=" + latV + "&mlon=" + lonV + "#map=17/" + latV + "/" + lonV;
+    } else {
+      link.hidden = true;
+    }
+
+    /* ----- top bar ----- */
+    if (online) {
+      setPill($("topPill"), "ready", "BACKEND ONLINE");
+      $("lastUpdate").textContent = timeStr(new Date());
+    } else {
+      setPill($("topPill"), "bad", "BACKEND OFFLINE");
+    }
+
+    /* ----- history ----- */
+    if (dd) {
+      history.unshift({
+        time: timeStr(new Date()),
+        cls: clsText,
+        conf: isNum(human) ? (human * 100).toFixed(1) + "%" : NA,
+        confirmation: confirmed ? (isTest ? "Confirmed (test)" : "Confirmed") : "Not confirmed",
+        mode: text(modeRaw),
+        test: isTest
+      });
+      if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+      renderHistory();
+    }
+  }
+
+  function renderHistory() {
+    var body = $("historyBody");
+    body.textContent = "";
+    if (!history.length) {
+      var tr0 = document.createElement("tr");
+      var td0 = document.createElement("td");
+      td0.colSpan = 5; td0.className = "na"; td0.textContent = "No readings yet.";
+      tr0.appendChild(td0); body.appendChild(tr0);
+      return;
+    }
+    history.forEach(function (h) {
+      var tr = document.createElement("tr");
+      if (h.test) tr.className = "test-row";
+      [h.time, h.cls, h.conf, h.confirmation, h.mode].forEach(function (c) {
+        var td = document.createElement("td");
+        td.textContent = c;
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  /* ---------- polling ---------- */
+  function poll() {
+    Promise.all([
+      fetchJSON("/api/status"),
+      fetchJSON("/api/detection"),
+      fetchJSON("/api/location"),
+      fetchJSON("/api/alert")
+    ]).then(function (r) {
+      try {
+        render({ status: r[0], detection: r[1], location: r[2], alert: r[3] });
+      } catch (e) {
+        if (window.console) console.error("Render error", e);
+      }
+      setTimeout(poll, POLL_MS);
+    });
+  }
+
+  function tickClock() {
+    $("clock").textContent = timeStr(new Date());
+    var s = Math.floor((Date.now() - startedAt) / 1000);
+    $("sessionTime").textContent = pad(Math.floor(s / 3600)) + ":" + pad(Math.floor((s % 3600) / 60)) + ":" + pad(s % 60);
+  }
+
+  $("clearBtn").addEventListener("click", function () { history = []; renderHistory(); });
+
+  tickClock();
+  setInterval(tickClock, 1000);
+  poll();
+})();
+</script>
+</body>
+</html>
